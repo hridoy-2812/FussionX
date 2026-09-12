@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AgriChain — Smart Agriculture Platform</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -11,84 +12,257 @@
             theme: {
                 extend: {
                     colors: {
-                        agri: { 50: '#f0fdf4', 400: '#4ade80', 500: '#22c55e', 600: '#16a34a', 900: '#14532d' },
+                        agri: { 50: '#f0fdf4', 100: '#dcfce7', 200: '#bbf7d0', 300: '#86efac', 400: '#4ade80', 500: '#22c55e', 600: '#16a34a', 700: '#15803d', 800: '#166534', 900: '#14532d', 950: '#052e16' },
                         surface: { 800: '#1a1f2e', 900: '#111827', 700: '#243046' }
+                    },
+                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+                    animation: { 'fade-in': 'fadeIn .5s ease-out', 'slide-up': 'slideUp .5s ease-out', 'pulse-slow': 'pulse 3s infinite', 'float': 'float 3s ease-in-out infinite' },
+                    keyframes: {
+                        fadeIn: { from: { opacity: 0 }, to: { opacity: 1 } },
+                        slideUp: { from: { opacity: 0, transform: 'translateY(20px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
+                        float: { '0%,100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-10px)' } },
                     }
                 }
             }
         };
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script>
+        window.exports = {};
+        window.module = { exports: window.exports };
+        window.require = function(mod) {
+            if (mod === 'react') return window.React;
+            if (mod === 'react-dom') return window.ReactDOM;
+            return {};
+        };
+    </script>
+    <script type="text/babel" data-type="module" src="./CropSimulation.jsx"></script>
+
     <style>
-        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s, color 0.3s; }
-        .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
+        body { font-family: 'Inter', system-ui, sans-serif; transition: background-color 0.3s, color 0.3s; }
+        ::-webkit-scrollbar { width: 6px; }
+        .dark ::-webkit-scrollbar-track { background: #1a1f2e; }
+        ::-webkit-scrollbar-thumb { background: #22c55e44; border-radius: 8px; }
+        .dark .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
+        .dark .glass-strong { background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.12); }
+        html:not(.dark) .glass { background: rgba(255,255,255,0.7); backdrop-filter: blur(12px); border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 2px 16px rgba(0,0,0,0.06); }
+        html:not(.dark) body { background: #f0fdf4 !important; color: #1a1a2e !important; }
+        html:not(.dark) .bg-surface-900 { background: #f0fdf4 !important; }
+        html:not(.dark) .bg-surface-800 { background: #e2e8f0 !important; }
+        html:not(.dark) .text-gray-100 { color: #1a1a2e !important; }
+        html:not(.dark) .text-gray-200 { color: #2d2d4e !important; }
+        html:not(.dark) .text-gray-400 { color: #555 !important; }
+        html:not(.dark) .border-gray-700 { border-color: #cbd5e1 !important; }
+        html:not(.dark) input, html:not(.dark) select { color: #1a1a2e; }
         .gradient-text { background: linear-gradient(135deg, #4ade80, #22d3ee); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         @keyframes chatPop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         .chat-pop { animation: chatPop 0.3s ease-out; }
-        @keyframes voicePulse { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); } 50% { box-shadow: 0 0 0 18px rgba(239,68,68,0); } }
-        .voice-pulse { animation: voicePulse 1.2s ease-in-out infinite; }
     </style>
 </head>
-<body class="bg-surface-900 text-gray-100 min-h-screen">
+<body class="bg-surface-900 text-gray-100 min-h-screen transition-colors duration-300">
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
     const { useState, useEffect, useRef, useCallback } = React;
 
-    /* ================================================================
-       HARDCODED TRANSLATION DICTIONARY (ZERO API COST)
-    ================================================================ */
-    const DICTIONARY = {
+    const T = {
         en: {
-            appName: "AgriChain", tagline: "Smart Agriculture Platform",
-            farmer: "Farmer", admin: "Admin", retailer: "Retailer",
-            welcome: "Welcome", logout: "Logout",
-            dashboard: "Dashboard", farmInfo: "Farm Info", community: "Community", predictor: "Predictor",
+            appName: "AgriChain", tagline: "Smart Agriculture Platform", selectRole: "Select Your Role", farmer: "Farmer", admin: "Admin", retailer: "Retailer",
+            farmerDesc: "Manage farm & get recommendations", adminDesc: "Monitor platform data", retailerDesc: "Source crops & auto-calculate margins",
+            dashboard: "Dashboard", farmInfo: "Farm Info", community: "Community", predictor: "Predictor", blockchain: "Blockchain Ledger",
             location: "Location (District)", soilType: "Soil Type", enterLocation: "e.g., Hooghly", selectSoil: "Select Soil...",
-            recommend: "Get Recommendations", cropName: "Crop", risk: "Risk Level", riskReason: "Analysis",
-            noResults: "No crops found for this district.", askQuestion: "Ask a question...", post: "Post",
-            chatTitle: "AgriChain Sarvam AI", chatPlaceholder: "Ask me anything...", send: "Send",
+            recommend: "Get Recommendations", cropName: "Crop", risk: "Risk Level", noResults: "No crops found for this district.",
+            askQuestion: "Ask a question...", post: "Post", chatTitle: "AgriChain Sarvam AI", chatPlaceholder: "Ask me anything...", send: "Send",
             voiceTitle: "Voice Assistant", voiceTap: "Tap to speak", listening: "Listening...", processing: "Processing...",
-            rainfall: "Rainfall", temperature: "Temperature", humidity: "Humidity",
-            mandiBuy: "Mandi Buy Price", retailSell: "Retail Selling Price", calcMargin: "Calculate Margins", profitMargin: "Profit Margin"
+            rainfall: "Rainfall", temperature: "Temperature", humidity: "Humidity", season: "Season", yieldPred: "Yield Prediction", refresh: "Refresh",
+            welcome: "Welcome", logout: "Logout", lightMode: "Light", darkMode: "Dark"
         },
         hi: {
-            appName: "एग्रीचेन", tagline: "स्मार्ट कृषि प्लेटफार्म",
-            farmer: "किसान", admin: "प्रशासक", retailer: "व्यापारी",
-            welcome: "स्वागत है", logout: "लॉगआउट",
-            dashboard: "डैशबोर्ड", farmInfo: "खेत की जानकारी", community: "समुदाय", predictor: "भविष्यवाणी",
+            appName: "एग्रीचेन", tagline: "स्मार्ट कृषि प्लेटफार्म", selectRole: "अपनी भूमिका चुनें", farmer: "किसान", admin: "प्रशासक", retailer: "व्यापारी",
+            farmerDesc: "खेत प्रबंधित करें", adminDesc: "डेटा मॉनिटर करें", retailerDesc: "फसलें प्राप्त करें",
+            dashboard: "डैशबोर्ड", farmInfo: "खेत की जानकारी", community: "समुदाय", predictor: "भविष्यवाणी", blockchain: "ब्लॉकचेन रिकॉर्ड्स",
             location: "स्थान (जिला)", soilType: "मिट्टी का प्रकार", enterLocation: "उदा. हुगली", selectSoil: "मिट्टी चुनें...",
-            recommend: "सिफारिशें प्राप्त करें", cropName: "फसल", risk: "जोखिम स्तर", riskReason: "विश्लेषण",
-            noResults: "इस जिले के लिए कोई फसल नहीं मिली।", askQuestion: "एक सवाल पूछें...", post: "पोस्ट",
-            chatTitle: "एग्रीचेन सर्वम AI", chatPlaceholder: "कुछ भी पूछें...", send: "भेजें",
+            recommend: "सिफारिशें प्राप्त करें", cropName: "फसल", risk: "जोखिम स्तर", noResults: "कोई फसल नहीं मिली।",
+            askQuestion: "एक सवाल पूछें...", post: "पोस्ट", chatTitle: "एग्रीचेन सर्वम AI", chatPlaceholder: "कुछ भी पूछें...", send: "भेजें",
             voiceTitle: "आवाज़ सहायक", voiceTap: "बोलने के लिए दबाएं", listening: "सुन रहा है...", processing: "प्रसंस्करण...",
-            rainfall: "वर्षा", temperature: "तापमान", humidity: "आर्द्रता",
-            mandiBuy: "मंडी खरीद मूल्य", retailSell: "खुदरा बिक्री मूल्य", calcMargin: "मार्जिन की गणना करें", profitMargin: "लाभ मार्जिन"
+            rainfall: "वर्षा", temperature: "तापमान", humidity: "आर्द्रता", season: "मौसम", yieldPred: "उपज भविष्यवाणी", refresh: "रीफ्रेश",
+            welcome: "स्वागत है", logout: "लॉगआउट", lightMode: "लाइट", darkMode: "डार्क"
         },
         bn: {
-            appName: "এগ্রিচেইন", tagline: "স্মার্ট কৃষি প্ল্যাটফর্ম",
-            farmer: "কৃষক", admin: "প্রশাসক", retailer: "ব্যবসায়ী",
-            welcome: "স্বাগতম", logout: "লগআউট",
-            dashboard: "ড্যাশবোর্ড", farmInfo: "খামারের তথ্য", community: "সম্প্রদায়", predictor: "ভবিষ্যদ্বাণী",
+            appName: "এগ্রিচেইন", tagline: "স্মার্ট কৃষি প্ল্যাটফর্ম", selectRole: "আপনার ভূমিকা নির্বাচন করুন", farmer: "কৃষক", admin: "প্রশাসক", retailer: "ব্যবসায়ী",
+            farmerDesc: "খামার পরিচালনা করুন", adminDesc: "ডেটা মনিটর করুন", retailerDesc: "ফসল সংগ্রহ করুন",
+            dashboard: "ড্যাশবোর্ড", farmInfo: "খামারের তথ্য", community: "সম্প্রদায়", predictor: "ভবিষ্যদ্বাণী", blockchain: "ব্লকচেইন লেজার",
             location: "অবস্থান (জেলা)", soilType: "মাটির ধরন", enterLocation: "যেমন, হুগলী", selectSoil: "মাটি নির্বাচন করুন...",
-            recommend: "পরামর্শ পান", cropName: "ফসল", risk: "ঝুঁকির মাত্রা", riskReason: "বিশ্লেষণ",
-            noResults: "এই জেলার জন্য কোনো ফসল পাওয়া যায়নি।", askQuestion: "একটি প্রশ্ন জিজ্ঞাসা করুন...", post: "পোস্ট",
-            chatTitle: "এগ্রিচেইন সর্বম AI", chatPlaceholder: "যেকোনো কিছু জিজ্ঞাসা করুন...", send: "পাঠান",
+            recommend: "পরামর্শ পান", cropName: "ফসল", risk: "ঝুঁকির মাত্রা", noResults: "কোনো ফসল পাওয়া যায়নি।",
+            askQuestion: "একটি প্রশ্ন জিজ্ঞাসা করুন...", post: "পোস্ট", chatTitle: "এগ্রিচেইন সর্বম AI", chatPlaceholder: "যেকোনো কিছু জিজ্ঞাসা করুন...", send: "পাঠান",
             voiceTitle: "ভয়েস সহকারী", voiceTap: "কথা বলতে চাপুন", listening: "শুনছি...", processing: "প্রক্রিয়াকরণ...",
-            rainfall: "বৃষ্টিপাত", temperature: "তাপমাত্রা", humidity: "আর্দ্রতা",
-            mandiBuy: "মান্ডি ক্রয় মূল্য", retailSell: "খুচরা বিক্রয় মূল্য", calcMargin: "মার্জিন গণনা করুন", profitMargin: "লাভ মার্জিন"
+            rainfall: "বৃষ্টিপাত", temperature: "তাপমাত্রা", humidity: "আর্দ্রতা", season: "ঋতু", yieldPred: "ফলন ভবিষ্যদ্বাণী", refresh: "রিফ্রেশ",
+            welcome: "স্বাগতম", logout: "লগআউট", lightMode: "লাইট", darkMode: "ডার্ক"
         }
     };
 
-    const LANG_CODES = { en: 'en-IN', hi: 'hi-IN', bn: 'bn-IN' };
-    const LANG_LABELS = { en: "English", hi: "हिंदी", bn: "বাংলা" };
+    const LANG_LABELS = { en: "EN", hi: "हिं", bn: "বাং" };
 
-    /* ================================================================
-       APP COMPONENTS
-    ================================================================ */
+    function Header({ role, lang, setLang, onLogout, theme, toggleTheme, t, activeView, setActiveView }) {
+        return (
+            <header className="glass sticky top-0 z-40 px-6 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <span className="text-2xl">🌾</span>
+                    <h1 className="text-xl font-bold gradient-text cursor-pointer" onClick={() => role && setActiveView("dashboard")}>{t.appName}</h1>
+                    <span className="text-xs px-2 py-1 bg-agri-900/50 border border-agri-700 rounded-full text-agri-400 uppercase tracking-wider">{role}</span>
+                    
+                    {role && (
+                        <div className="flex gap-2 ml-4">
+                            <button onClick={() => setActiveView("dashboard")} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${activeView === "dashboard" ? 'bg-agri-600 text-white' : 'bg-surface-800 text-gray-300'}`}>📊 {t.dashboard}</button>
+                            <button onClick={() => setActiveView("blockchain")} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${activeView === "blockchain" ? 'bg-agri-600 text-white' : 'bg-surface-800 text-gray-300'}`}>⛓️ {t.blockchain}</button>
+                            <button onClick={() => setActiveView("digital_twin")} className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${activeView === "digital_twin" ? 'bg-agri-600 text-white' : 'bg-surface-800 text-gray-300'}`}>🌱 Crop Sim</button>
+                        </div>
+                    )}
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="flex bg-surface-800 rounded-xl overflow-hidden border border-gray-700/50">
+                        {Object.keys(LANG_LABELS).map(l => (
+                            <button key={l} onClick={() => setLang(l)} className={`px-3 py-1.5 text-xs font-semibold transition-all ${lang === l ? 'bg-agri-600 text-white' : 'text-gray-400'}`}>{LANG_LABELS[l]}</button>
+                        ))}
+                    </div>
+                    <button onClick={toggleTheme} className="p-2 rounded-xl hover:bg-white/10 text-lg">{theme === 'dark' ? '☀️' : '🌙'}</button>
+                    <button onClick={onLogout} className="p-2 rounded-xl text-red-400 hover:text-red-300 text-sm font-medium">{t.logout}</button>
+                </div>
+            </header>
+        );
+    }
+
+    function LandingPage({ onSelectRole, t }) {
+        const roles = [
+            { key: "Farmer", emoji: "🌾", color: "from-green-500/20 to-emerald-600/20", border: "border-green-500/30", desc: t.farmerDesc },
+            { key: "Admin", emoji: "⚙️", color: "from-blue-500/20 to-cyan-600/20", border: "border-blue-500/30", desc: t.adminDesc },
+            { key: "Retailer", emoji: "🛒", color: "from-amber-500/20 to-orange-600/20", border: "border-amber-500/30", desc: t.retailerDesc },
+        ];
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center p-6">
+                <div className="text-center mb-12 animate-fade-in">
+                    <div className="text-6xl mb-4 animate-float">🌾</div>
+                    <h1 className="text-5xl font-black gradient-text mb-3">{t.appName}</h1>
+                    <p className="text-gray-400 text-lg">{t.tagline}</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl w-full">
+                    {roles.map((r, i) => (
+                        <button key={r.key} onClick={() => onSelectRole(r.key)} className={`glass group p-8 rounded-2xl bg-gradient-to-br ${r.color} ${r.border} border hover:scale-105 transition-all text-left animate-slide-up`}>
+                            <div className="text-4xl mb-4">{r.emoji}</div>
+                            <h3 className="text-xl font-bold mb-2">{t[r.key.toLowerCase()]}</h3>
+                            <p className="text-gray-400 text-sm">{r.desc}</p>
+                        </button>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    function RetailerDashboard({ t }) {
+        const [locationMap, setLocationMap] = useState({});
+        const [districts, setDistricts] = useState([]);
+        const [selectedDistrict, setSelectedDistrict] = useState("");
+        const [availableCrops, setAvailableCrops] = useState([]);
+        const [selectedCrop, setSelectedCrop] = useState("");
+        const [metrics, setMetrics] = useState(null);
+        const [loading, setLoading] = useState(false);
+
+        useEffect(() => {
+            fetch("/api/retailer/locations").then(r => r.json()).then(data => {
+                setLocationMap(data);
+                setDistricts(Object.keys(data));
+            });
+        }, []);
+
+        const handleDistrictChange = (e) => {
+            const dist = e.target.value;
+            setSelectedDistrict(dist);
+            setSelectedCrop("");
+            setMetrics(null);
+            setAvailableCrops(dist ? locationMap[dist] : []);
+        };
+
+        const handleFetchPrices = async () => {
+            if (!selectedCrop) return;
+            setLoading(true);
+            try {
+                const res = await fetch("/api/retailer/crop_details", {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ crop: selectedCrop })
+                });
+                setMetrics(await res.json());
+            } catch (err) { console.error(err); }
+            setLoading(false);
+        };
+
+        return (
+            <div className="max-w-6xl mx-auto p-6 animate-fade-in space-y-8">
+                <h2 className="text-2xl font-bold">{t.welcome}, <span className="gradient-text">{t.retailer}</span> 👋</h2>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="glass rounded-2xl p-6 space-y-5">
+                        <h3 className="font-bold text-lg gradient-text">🛒 Procurement & Auto-Pricing Engine</h3>
+                        
+                        <div>
+                            <label className="text-xs text-gray-400 block mb-1">1. Select Location (District)</label>
+                            <select value={selectedDistrict} onChange={handleDistrictChange} className="w-full bg-surface-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm">
+                                <option value="">Choose District...</option>
+                                {districts.map(d => <option key={d} value={d}>{d}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="text-xs text-gray-400 block mb-1">2. Select Regional Crop</label>
+                            <select value={selectedCrop} onChange={e => setSelectedCrop(e.target.value)} disabled={!selectedDistrict} className="w-full bg-surface-900 border border-gray-700 rounded-xl px-4 py-2.5 text-sm disabled:opacity-40">
+                                <option value="">Choose Crop...</option>
+                                {availableCrops.map(c => <option key={c} value={c}>{c}</option>)}
+                            </select>
+                        </div>
+                        <button onClick={handleFetchPrices} disabled={!selectedCrop || loading} className="w-full bg-gradient-to-r from-agri-600 to-emerald-600 py-3 rounded-xl font-semibold disabled:opacity-40">
+                            {loading ? "Fetching DB Prices..." : "Fetch DB Prices & Calculate Margin"}
+                        </button>
+                    </div>
+
+                    <div className="glass rounded-2xl p-6 border border-cyan-500/20 min-h-[320px]">
+                        {!metrics ? (
+                            <div className="text-center text-gray-500 text-sm italic py-12">Select district and crop to automatically fetch pricing from Supabase.</div>
+                        ) : (
+                            <div className="animate-slide-up space-y-6">
+                                <div className="border-b border-gray-700/60 pb-4">
+                                    <h4 className="text-xs text-gray-400 uppercase font-semibold mb-1">Crop & Location</h4>
+                                    <p className="text-xl font-bold">{selectedCrop} <span className="text-agri-400 font-semibold ml-2">| {selectedDistrict}</span></p>
+                                </div>
+                                <div className="p-4 rounded-xl bg-surface-800/80 border border-gray-700/60 flex justify-between items-center">
+                                    <div>
+                                        <h5 className="text-xs text-gray-400 uppercase mb-1">Yield & ML Confidence</h5>
+                                        <p className="text-sm">Predicted Yield: <span className="font-bold text-white text-base">{metrics.predicted_yield} Qtl/Acre</span></p>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-2xl font-black text-cyan-400">{metrics.ml_confidence}%</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h5 className="text-xs text-gray-400 uppercase mb-3">Database Price & Profit Metrics</h5>
+                                    <div className="space-y-2 text-sm">
+                                        <div className="flex justify-between py-1"><span className="text-gray-400">Mandi Buy Price:</span><span className="font-mono">₹{metrics.mandi_price} / Qtl</span></div>
+                                        <div className="flex justify-between py-1"><span className="text-gray-400">Retail Selling Price:</span><span className="font-mono">₹{metrics.selling_price} / Qtl</span></div>
+                                        <div className="h-px bg-gray-700/60 my-2"></div>
+                                        <div className="flex justify-between items-center pt-1">
+                                            <span className="font-bold">Retailer Profit Margin:</span>
+                                            <span className="text-xl font-black text-green-400">{metrics.margin}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     function FarmInfoTab({ t }) {
         const [location, setLocation] = useState("");
         const [soilType, setSoilType] = useState("");
@@ -99,40 +273,31 @@
             if (!location) return;
             setLoading(true);
             try {
-                const res = await fetch("/api/recommend", {
-                    method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ soil_type: soilType, location }),
-                });
-                const data = await res.json();
-                setResults(data);
+                const res = await fetch("/api/recommend", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ soil_type: soilType, location }) });
+                setResults(await res.json());
             } catch (e) { console.error(e); }
             setLoading(false);
         };
-
         const riskColors = { Low: "text-green-400 bg-green-500/10 border-green-500", Medium: "text-yellow-400 bg-yellow-500/10 border-yellow-500", High: "text-red-400 bg-red-500/10 border-red-500" };
 
         return (
-            <div className="space-y-6">
+            <div className="space-y-6 animate-fade-in">
                 <div className="glass rounded-2xl p-6">
                     <h3 className="text-lg font-bold mb-4 gradient-text">{t.farmInfo}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label className="text-sm text-gray-400 mb-1 block">{t.location}</label>
-                            <input type="text" value={location} onChange={e => setLocation(e.target.value)}
-                                className="w-full bg-surface-900 border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-agri-500"
-                                placeholder={t.enterLocation} />
+                            <input type="text" value={location} onChange={e => setLocation(e.target.value)} className="w-full bg-surface-900 border border-gray-700 rounded-xl px-4 py-3" placeholder={t.enterLocation} />
                         </div>
                         <div>
                             <label className="text-sm text-gray-400 mb-1 block">{t.soilType}</label>
-                            <select value={soilType} onChange={e => setSoilType(e.target.value)}
-                                className="w-full bg-surface-900 border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-agri-500">
+                            <select value={soilType} onChange={e => setSoilType(e.target.value)} className="w-full bg-surface-900 border border-gray-700 rounded-xl px-4 py-3">
                                 <option value="">{t.selectSoil}</option>
                                 {["Alluvial", "Laterite", "Red Sandy", "Brown Forest"].map(s => <option key={s} value={s}>{s}</option>)}
                             </select>
                         </div>
                         <div className="flex items-end">
-                            <button onClick={handleRecommend} disabled={!location || loading}
-                                className="w-full bg-agri-600 hover:bg-agri-500 disabled:opacity-40 rounded-xl px-6 py-3 font-semibold transition-all">
+                            <button onClick={handleRecommend} disabled={!location || loading} className="w-full bg-agri-600 hover:bg-agri-500 disabled:opacity-40 rounded-xl px-6 py-3 font-semibold">
                                 {loading ? "..." : t.recommend}
                             </button>
                         </div>
@@ -141,23 +306,15 @@
 
                 {results && (
                     <div className="glass rounded-2xl p-6">
-                        <h4 className="font-bold mb-4 text-agri-400">
-                            {results.recommendations?.length > 0 
-                                ? `${results.recommendations.length} ${t.cropName}(s) for ${results.location}`
-                                : t.noResults}
-                        </h4>
+                        <h4 className="font-bold mb-4 text-agri-400">{results.recommendations?.length > 0 ? `${results.recommendations.length} ${t.cropName}(s) for ${results.location}` : t.noResults}</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {results.recommendations?.map((c, i) => (
                                 <div key={i} className="bg-surface-800 rounded-xl p-5 border border-gray-700/50">
                                     <div className="flex justify-between items-start mb-2">
                                         <h5 className="font-bold text-xl">{c.crop_name}</h5>
-                                        <span className={`text-xs px-2 py-1 rounded-full font-medium border ${riskColors[c.risk_level] || ''}`}>
-                                            {t.risk}: {c.risk_level}
-                                        </span>
+                                        <span className={`text-xs px-2 py-1 rounded-full font-medium border ${riskColors[c.risk_level] || ''}`}>{t.risk}: {c.risk_level}</span>
                                     </div>
-                                    <div className="text-sm text-gray-400 mt-3 border-t border-gray-700 pt-2">
-                                        <span className="font-semibold text-gray-300">{t.riskReason}:</span> {c.risk_reason}
-                                    </div>
+                                    <div className="text-sm text-gray-400 mt-3 border-t border-gray-700 pt-2"><span className="font-semibold text-gray-300">{t.riskReason}:</span> {c.risk_reason}</div>
                                 </div>
                             ))}
                         </div>
@@ -167,104 +324,74 @@
         );
     }
 
-    function CommunityTab({ role, t }) {
-        const [posts, setPosts] = useState([]);
-        const [question, setQuestion] = useState("");
-
-        const load = useCallback(async () => {
-            try {
-                const res = await fetch("/api/forum");
-                setPosts(await res.json());
-            } catch (e) {}
-        }, []);
-
-        useEffect(() => { load(); }, [load]);
-
-        const handlePost = async () => {
-            if (!question.trim()) return;
-            await fetch("/api/forum", {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ question, user_role: role }),
-            });
-            setQuestion("");
-            load();
-        };
-
+    function PredictorTab({ t }) {
+        const [data, setData] = useState(null);
+        useEffect(() => { fetch("/api/weather").then(r=>r.json()).then(d=>setData(d)); }, []);
+        if(!data) return null;
+        const cards = [
+            { label: t.rainfall, value: data.rainfall_mm, unit: "mm", icon: "🌧️", color: "from-blue-500/20 to-cyan-500/20" },
+            { label: t.yieldPred, value: data.yield_prediction_pct, unit: "%", icon: "📈", color: "from-green-500/20 to-emerald-500/20" },
+            { label: t.temperature, value: data.temperature_c, unit: "°C", icon: "🌡️", color: "from-orange-500/20 to-red-500/20" },
+            { label: t.humidity, value: data.humidity_pct, unit: "%", icon: "💧", color: "from-teal-500/20 to-cyan-500/20" },
+        ];
         return (
-            <div className="space-y-6">
-                <div className="glass rounded-2xl p-6 flex gap-3">
-                    <input type="text" value={question} onChange={e => setQuestion(e.target.value)}
-                        className="flex-1 bg-surface-900 border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-agri-500"
-                        placeholder={t.askQuestion} />
-                    <button onClick={handlePost} className="bg-agri-600 hover:bg-agri-500 rounded-xl px-6 py-3 font-semibold">
-                        {t.post}
-                    </button>
-                </div>
-                <div className="space-y-3">
-                    {posts.map((p, i) => (
-                        <div key={i} className="glass rounded-xl p-4">
-                            <div className="flex justify-between">
-                                <p className="text-gray-200">{p.question}</p>
-                                <span className="text-xs px-2 py-1 rounded-full border text-agri-400 border-agri-500">{p.user_role}</span>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-2">{p.timestamp}</p>
-                        </div>
-                    ))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in">
+                {cards.map((c, i) => (
+                    <div key={i} className={`glass rounded-2xl p-6 bg-gradient-to-br ${c.color} border`}>
+                        <div className="text-3xl mb-3">{c.icon}</div>
+                        <p className="text-sm text-gray-400 mb-1">{c.label}</p>
+                        <p className="text-3xl font-black">{c.value}<span className="text-lg font-normal text-gray-400 ml-1">{c.unit}</span></p>
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
+    function BlockchainTab({ t }) {
+        const [records, setRecords] = useState([]);
+        useEffect(() => { fetch("/api/blockchain/records").then(r => r.json()).then(d => setRecords(d.reverse())); }, []);
+        return (
+            <div className="glass rounded-2xl p-6 animate-fade-in">
+                <h4 className="font-bold text-lg mb-4 gradient-text">⛓️ {t.blockchain} Ledger</h4>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                        <thead className="border-b border-gray-700 text-gray-400"><tr><th className="py-2.5 px-3">Batch ID</th><th className="py-2.5 px-3">Crop</th><th className="py-2.5 px-3">Cryptographic Hash</th></tr></thead>
+                        <tbody className="divide-y divide-gray-800">
+                            {records.map((r, i) => (
+                                <tr key={i} className="font-mono hover:bg-white/[0.02]">
+                                    <td className="py-3 px-3 text-agri-400 font-bold">{r.batch_id}</td><td className="py-3 px-3 text-gray-200 font-sans">{r.crop_name}</td><td className="py-3 px-3 text-cyan-400">{r.data_hash.slice(0, 20)}...</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         );
     }
 
-    function RetailerDashboard({ t }) {
-        const [districts, setDistricts] = useState([]);
-        const [locMap, setLocMap] = useState({});
-        const [selDist, setSelDist] = useState("");
-        const [selCrop, setSelCrop] = useState("");
-        const [mandi, setMandi] = useState("");
-        const [sell, setSell] = useState("");
-        const [metrics, setMetrics] = useState(null);
-
-        useEffect(() => {
-            fetch("/api/retailer/locations").then(r => r.json()).then(d => {
-                setLocMap(d); setDistricts(Object.keys(d));
-            });
-        }, []);
-
-        const calc = async () => {
-            const res = await fetch("/api/retailer/calculate", {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ district: selDist, crop: selCrop, mandi_price: mandi, selling_price: sell })
-            });
-            setMetrics(await res.json());
+    function CommunityTab({ role, t }) {
+        const [posts, setPosts] = useState([]);
+        const [question, setQuestion] = useState("");
+        const load = () => fetch("/api/forum").then(r=>r.json()).then(setPosts);
+        useEffect(() => { load(); }, []);
+        const handlePost = async () => {
+            if (!question) return;
+            await fetch("/api/forum", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question, user_role: role }) });
+            setQuestion(""); load();
         };
-
         return (
-            <div className="space-y-8 animate-fade-in">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div className="glass rounded-2xl p-6 space-y-4">
-                        <select onChange={e => {setSelDist(e.target.value); setSelCrop("")}} className="w-full bg-surface-900 border border-gray-700 rounded-xl px-4 py-2">
-                            <option value="">{t.location}...</option>
-                            {districts.map(d => <option key={d}>{d}</option>)}
-                        </select>
-                        <select value={selCrop} onChange={e => setSelCrop(e.target.value)} disabled={!selDist} className="w-full bg-surface-900 border border-gray-700 rounded-xl px-4 py-2 disabled:opacity-50">
-                            <option value="">{t.cropName}...</option>
-                            {(locMap[selDist] || []).map(c => <option key={c}>{c}</option>)}
-                        </select>
-                        <input type="number" placeholder={t.mandiBuy} value={mandi} onChange={e => setMandi(e.target.value)} className="w-full bg-surface-900 border border-gray-700 rounded-xl px-4 py-2" />
-                        <input type="number" placeholder={t.retailSell} value={sell} onChange={e => setSell(e.target.value)} className="w-full bg-surface-900 border border-gray-700 rounded-xl px-4 py-2" />
-                        <button onClick={calc} className="w-full bg-agri-600 rounded-xl py-3 font-semibold">{t.calcMargin}</button>
-                    </div>
-                    {metrics && (
-                        <div className="glass rounded-2xl p-6 border-cyan-500/20">
-                            <h4 className="text-xl font-bold">{metrics.crop} | {metrics.district}</h4>
-                            <div className="mt-4 p-4 bg-surface-800 rounded-xl">
-                                <p className="text-gray-400">{t.profitMargin}:</p>
-                                <p className={`text-3xl font-black ${metrics.profit_margin_pct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                    {metrics.profit_margin_pct}%
-                                </p>
-                            </div>
+            <div className="space-y-6 animate-fade-in">
+                <div className="glass rounded-2xl p-6 flex gap-3">
+                    <input value={question} onChange={e=>setQuestion(e.target.value)} className="flex-1 bg-surface-900 border border-gray-700 rounded-xl px-4 py-3" placeholder={t.askQuestion} />
+                    <button onClick={handlePost} className="bg-agri-600 rounded-xl px-6 py-3 font-semibold">{t.post}</button>
+                </div>
+                <div className="space-y-3">
+                    {posts.map((p, i) => (
+                        <div key={i} className="glass rounded-xl p-4 flex justify-between">
+                            <p className="text-gray-200">{p.question}</p>
+                            <span className="text-xs px-2 py-1 rounded-full border text-agri-400 border-agri-500">{p.user_role}</span>
                         </div>
-                    )}
+                    ))}
                 </div>
             </div>
         );
@@ -278,13 +405,9 @@
         const send = async () => {
             if (!inp) return;
             const uMsg = inp;
-            setInp("");
-            setMsgs(p => [...p, { role: "user", text: uMsg }]);
+            setInp(""); setMsgs(p => [...p, { role: "user", text: uMsg }]);
             try {
-                const res = await fetch("/api/chat", {
-                    method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ message: uMsg, lang: LANG_CODES[lang] })
-                });
+                const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: uMsg, lang: LANG_CODES[lang] }) });
                 const d = await res.json();
                 setMsgs(p => [...p, { role: "bot", text: d.reply }]);
             } catch(e) {}
@@ -292,19 +415,17 @@
 
         return (
             <>
-                <button onClick={() => setOpen(!open)} className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-agri-600 text-2xl">💬</button>
+                <button onClick={() => setOpen(!open)} className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-agri-600 text-2xl shadow-2xl">💬</button>
                 {open && (
-                    <div className="fixed bottom-24 right-6 w-80 h-96 glass-strong rounded-2xl flex flex-col p-4">
-                        <h4 className="font-bold border-b border-gray-700 pb-2">{t.chatTitle} (Sarvam)</h4>
+                    <div className="fixed bottom-24 right-6 w-80 h-96 glass-strong rounded-2xl flex flex-col p-4 shadow-2xl z-50">
+                        <h4 className="font-bold border-b border-gray-700 pb-2 text-agri-400">{t.chatTitle}</h4>
                         <div className="flex-1 overflow-y-auto py-2 space-y-2">
                             {msgs.map((m, i) => (
-                                <div key={i} className={`p-2 rounded-xl text-sm ${m.role === 'user' ? 'bg-agri-600 ml-auto' : 'bg-surface-800'} max-w-[85%]`}>
-                                    {m.text}
-                                </div>
+                                <div key={i} className={`p-2 rounded-xl text-sm ${m.role === 'user' ? 'bg-agri-600 ml-auto text-white' : 'bg-surface-800 text-gray-200'} max-w-[85%]`}>{m.text}</div>
                             ))}
                         </div>
                         <div className="flex gap-2 pt-2 border-t border-gray-700">
-                            <input value={inp} onChange={e => setInp(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send()} className="flex-1 bg-surface-900 px-3 py-2 rounded-lg text-sm" placeholder={t.chatPlaceholder} />
+                            <input value={inp} onChange={e=>setInp(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send()} className="flex-1 bg-surface-900 px-3 py-2 rounded-lg text-sm" placeholder={t.chatPlaceholder} />
                             <button onClick={send} className="bg-agri-600 px-3 py-2 rounded-lg text-sm">{t.send}</button>
                         </div>
                     </div>
@@ -321,34 +442,31 @@
 
         const start = () => {
             const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if(!SR) return;
+            if(!SR) { alert("Speech Recognition not supported in this browser."); return; }
             const rec = new SR();
             rec.lang = LANG_CODES[lang];
             rec.onresult = async (e) => {
                 const text = e.results[0][0].transcript;
-                setTranscript(text);
-                setStatus('processing');
-                const res = await fetch('/api/chat', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ message: text, lang: LANG_CODES[lang] }) });
+                setTranscript(text); setStatus('processing');
+                const res = await fetch('/api/chat', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ message: text }) });
                 const data = await res.json();
-                setReply(data.reply);
-                setStatus('idle');
+                setReply(data.reply); setStatus('idle');
                 const utter = new SpeechSynthesisUtterance(data.reply);
                 utter.lang = LANG_CODES[lang];
                 window.speechSynthesis.speak(utter);
             };
-            rec.start();
-            setStatus('listening');
+            rec.start(); setStatus('listening');
         };
 
         const statusColor = { idle: 'bg-agri-600', listening: 'bg-red-500 voice-pulse', processing: 'bg-yellow-500' };
 
         return (
             <>
-                <button onClick={() => setOpen(!open)} className="fixed bottom-6 left-6 z-50 w-14 h-14 rounded-full bg-purple-600 text-2xl">🎙️</button>
+                <button onClick={() => setOpen(!open)} className="fixed bottom-6 left-6 z-50 w-14 h-14 rounded-full bg-purple-600 text-2xl shadow-2xl">🎙️</button>
                 {open && (
-                    <div className="fixed bottom-24 left-6 w-72 glass-strong rounded-2xl p-6 text-center">
+                    <div className="fixed bottom-24 left-6 w-72 glass-strong rounded-2xl p-6 text-center shadow-2xl z-50">
                         <h4 className="font-bold mb-4">{t.voiceTitle}</h4>
-                        <button onClick={start} className={`w-20 h-20 mx-auto rounded-full text-3xl ${statusColor[status]}`}>🎤</button>
+                        <button onClick={start} className={`w-20 h-20 mx-auto rounded-full text-3xl ${statusColor[status]} text-white transition-all`}>🎤</button>
                         <p className="text-xs mt-3 text-gray-400">{status === 'idle' ? t.voiceTap : (status === 'listening' ? t.listening : t.processing)}</p>
                         {transcript && <p className="mt-3 text-xs bg-surface-800 p-2 rounded">{transcript}</p>}
                         {reply && <p className="mt-2 text-xs bg-agri-900 p-2 rounded text-agri-400">{reply}</p>}
@@ -358,59 +476,71 @@
         );
     }
 
+    function AdminDashboard({ t }) {
+        const [posts, setPosts] = useState([]);
+        useEffect(() => { fetch("/api/forum").then(r=>r.json()).then(setPosts); }, []);
+        return (
+            <div className="max-w-6xl mx-auto p-6 animate-fade-in space-y-6">
+                <h2 className="text-2xl font-bold">{t.welcome}, <span className="gradient-text">{t.admin}</span> 👋</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="glass rounded-2xl p-6 bg-gradient-to-br from-blue-500/20 border-blue-500/30">
+                        <div className="text-3xl mb-2">📝</div><p className="text-sm text-gray-400">Total Forum Posts</p><p className="text-4xl font-black mt-1">{posts.length}</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     function App() {
         const [role, setRole] = useState(null);
         const [lang, setLang] = useState("en");
+        const [theme, setTheme] = useState('dark');
+        const [activeView, setActiveView] = useState("dashboard");
         const [tab, setTab] = useState("farm");
         
+        const CropSimulation = window.exports && window.exports.default ? window.exports.default : () => <div className="p-8 text-center glass rounded-2xl animate-pulse">Loading Digital Twin Sandbox...</div>;
+
+        const toggleTheme = useCallback(() => {
+            setTheme(p => {
+                const next = p === 'dark' ? 'light' : 'dark';
+                if (next === 'dark') document.documentElement.classList.add('dark');
+                else document.documentElement.classList.remove('dark');
+                return next;
+            });
+        }, []);
+
         const t = DICTIONARY[lang];
 
-        if (!role) {
-            return (
-                <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
-                    <h1 className="text-5xl font-black gradient-text mb-8">{t.appName}</h1>
-                    <div className="flex gap-4 mb-8">
-                        {Object.keys(LANG_LABELS).map(l => (
-                            <button key={l} onClick={() => setLang(l)}
-                                className={`px-4 py-2 rounded-xl text-sm font-semibold border ${lang === l ? 'bg-agri-600 border-agri-500' : 'border-gray-700'}`}>
-                                {LANG_LABELS[l]}
-                            </button>
-                        ))}
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl w-full">
-                        {["Farmer", "Admin", "Retailer"].map(r => (
-                            <button key={r} onClick={() => setRole(r)} className="glass p-6 rounded-2xl hover:scale-105 transition">
-                                <h3 className="text-xl font-bold">{t[r.toLowerCase()]}</h3>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            );
-        }
+        if (!role) return <LandingPage onSelectRole={(r) => { setRole(r); setActiveView("dashboard"); }} t={t} />;
 
         return (
-            <div className="min-h-screen p-6 max-w-6xl mx-auto">
-                <header className="flex justify-between items-center mb-8 glass p-4 rounded-2xl">
-                    <h2 className="text-xl font-bold gradient-text">{t.welcome}, {t[role.toLowerCase()]}</h2>
-                    <div className="flex gap-4">
-                        <select value={lang} onChange={e => setLang(e.target.value)} className="bg-surface-900 border border-gray-700 rounded-lg px-2 text-sm">
-                            <option value="en">English</option>
-                            <option value="hi">हिंदी</option>
-                            <option value="bn">বাংলা</option>
-                        </select>
-                        <button onClick={() => setRole(null)} className="text-red-400 hover:text-red-300 text-sm">{t.logout}</button>
-                    </div>
-                </header>
+            <div className="min-h-screen flex flex-col">
+                <Header role={role} lang={lang} setLang={setLang} onLogout={() => { setRole(null); setActiveView("dashboard"); }} theme={theme} toggleTheme={toggleTheme} t={t} activeView={activeView} setActiveView={setActiveView} />
 
-                <div className="flex gap-2 mb-6 bg-surface-800 rounded-xl p-1.5 w-fit">
-                    {role === "Farmer" && <button onClick={() => setTab("farm")} className={`px-4 py-2 rounded-lg text-sm ${tab === 'farm' ? 'bg-agri-600' : ''}`}>{t.farmInfo}</button>}
-                    {role === "Farmer" && <button onClick={() => setTab("community")} className={`px-4 py-2 rounded-lg text-sm ${tab === 'community' ? 'bg-agri-600' : ''}`}>{t.community}</button>}
-                </div>
+                <main className="flex-1 p-6">
+                    {activeView === "dashboard" && (
+                        <div className="max-w-6xl mx-auto">
+                            {role === "Farmer" && (
+                                <>
+                                    <h2 className="text-2xl font-bold mb-6">{t.welcome}, <span className="gradient-text">{t.farmer}</span> 👋</h2>
+                                    <div className="flex gap-2 mb-6 bg-surface-800 rounded-xl p-1.5 w-fit">
+                                        <button onClick={() => setTab("farm")} className={`px-4 py-2 rounded-lg text-sm ${tab === 'farm' ? 'bg-agri-600 text-white' : 'text-gray-400 hover:text-white'}`}>🏡 {t.farmInfo}</button>
+                                        <button onClick={() => setTab("community")} className={`px-4 py-2 rounded-lg text-sm ${tab === 'community' ? 'bg-agri-600 text-white' : 'text-gray-400 hover:text-white'}`}>👥 {t.community}</button>
+                                        <button onClick={() => setTab("predictor")} className={`px-4 py-2 rounded-lg text-sm ${tab === 'predictor' ? 'bg-agri-600 text-white' : 'text-gray-400 hover:text-white'}`}>📊 {t.predictor}</button>
+                                    </div>
+                                    {tab === "farm" && <FarmInfoTab t={t} />}
+                                    {tab === "community" && <CommunityTab role={role} t={t} />}
+                                    {tab === "predictor" && <PredictorTab t={t} />}
+                                </>
+                            )}
+                            {role === "Admin" && <AdminDashboard t={t} />}
+                            {role === "Retailer" && <RetailerDashboard t={t} />}
+                        </div>
+                    )}
+                    {activeView === "blockchain" && <div className="max-w-6xl mx-auto"><BlockchainTab t={t} /></div>}
+                    {activeView === "digital_twin" && <div className="max-w-6xl mx-auto"><CropSimulation /></div>}
+                </main>
 
-                {role === "Farmer" && tab === "farm" && <FarmInfoTab t={t} />}
-                {role === "Farmer" && tab === "community" && <CommunityTab role={role} t={t} />}
-                {role === "Retailer" && <RetailerDashboard t={t} />}
-                
                 <ChatBot lang={lang} t={t} />
                 <VoiceAssistant lang={lang} t={t} />
             </div>
