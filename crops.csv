@@ -1,0 +1,13 @@
+soil_type,crop_name,expected_profit,risk_level
+Clay,Rice,"₹25,000/acre",Low
+Clay,Wheat,"₹18,000/acre",Medium
+Sandy,Groundnut,"₹22,000/acre",Medium
+Sandy,Watermelon,"₹30,000/acre",High
+Loamy,Sugarcane,"₹35,000/acre",Low
+Loamy,Maize,"₹20,000/acre",Low
+Red,Millet,"₹15,000/acre",Low
+Red,Cotton,"₹28,000/acre",High
+Black,Soybean,"₹24,000/acre",Medium
+Black,Cotton,"₹32,000/acre",Medium
+Alluvial,Rice,"₹27,000/acre",Low
+Alluvial,Jute,"₹19,000/acre",Medium
